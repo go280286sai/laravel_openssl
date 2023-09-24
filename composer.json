@@ -1,0 +1,27 @@
+{
+    "name": "go280286sai/laravel_openssl",
+    "description": "Asynchronous encryption in laravel with OpenSSL",
+    "minimum-stability": "stable",
+    "license": "proprietary",
+    "authors": [
+        {
+            "name": "Aleksander",
+            "email": "go280286sai@gmail.com"
+        }
+    ],
+    "require": {
+        "ext-openssl": "*"
+    },
+    "autoload": {
+        "psr-4": {
+            "go280286sai\\laravel_openssl\\": "src"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "go280286sai\\laravel_openssl\\Providers\\OpensslProvider"
+            ]
+        }
+    }
+}
