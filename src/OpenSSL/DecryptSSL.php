@@ -9,26 +9,21 @@ use Illuminate\Support\Carbon;
 class DecryptSSL extends OpenSSL
 {
     /**
-     * @param array $encryptedData
+     * @param string $encryptedData
      * @param string $publicKey
-     * @return string|null
+     * @return string
      */
-    public function decrypt(array $encryptedData, string $publicKey): string|null
+    public function decrypt(string $encryptedData, string $publicKey): string
     {
-        $textToDecrypt = base64_decode($encryptedData[0]);
-        $signatureToVerify = base64_decode($encryptedData[1]);
-        openssl_private_decrypt($textToDecrypt, $decryptedData, static::get_private_key());
-        $verificationResult = openssl_verify($decryptedData, $signatureToVerify, $publicKey, "sha256WithRSAEncryption");
         try {
-            if ($verificationResult === 1) {
-                return $decryptedData;
-            } else {
-                throw new \Exception('Signature verification error');
-            }
+            $textToDecrypt = base64_decode($encryptedData);
+            openssl_private_decrypt($textToDecrypt, $decryptedData, parent::get_private_key());
+
+            return $decryptedData;
         } catch (\Exception $e) {
             LogMessage::send($e->getMessage() . ' of date:' . Carbon::now());
 
-            return null;
+            return $e->getMessage();
         }
     }
 }

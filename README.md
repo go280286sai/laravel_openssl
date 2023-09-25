@@ -2,11 +2,17 @@
 
 ## Публикация "config/openssl.php", "resources/views/vendor/openssl"
 
-    php artisan vendor:publish go280286sai\laravel_openssl\Providers\OpensslProvider
+    php artisan vendor:publish --provider="go280286sai\laravel_openssl\Providers\OpensslProvider"
 
 ### После установке пакета необходимо выполнить миграцмю:
 
     php artisan migrate
+
+### Изменить права папки:
+
+Перейдите на "/vendor/go280286sai/laravel_openssl/src/OpenSSL/files/"
+
+    chmod a+w -R ssl
 
 ## Генерация публичного ключа и получение данных
 
@@ -38,9 +44,10 @@ Personal key: *************
 
 ## Для отображения всех доступных ресурсов добавим метод: 
 
-    public function index()
+    public function index(): View
     {
         $resource = Ssl_search::all();
+
         return view('vendor.openssl.index', ['resource' => $resource]);
     }
 
@@ -51,7 +58,7 @@ Personal key: *************
          return view('vendor.openssl.add_resource');
     }
 
-    public function add(Request $request)
+    public function store(Request $request): RedirectResponse
     {
         $request->validate([
             'name' => 'required|string',
@@ -68,10 +75,11 @@ Personal key: *************
 
 ## Для обновления ресурса:
 
-    public function edit(int $id)
+    public function edit(int $id): View
     {
         $resource = Ssl_search::find($id);
-        $publicKey = Ssl_search::get_public_key($id . '_id_public');
+        $publicKey = Ssl_search::get_public_key($id . Ssl_search::$toSave);
+
         return view('vendor.openssl.update_resource', ['resource' => $resource, 'publicKey' => $publicKey]);
     }
 
@@ -83,54 +91,56 @@ Personal key: *************
             'url' => 'required|string',
         ]);
         Ssl_search::update_resource(['name' => $request->name, 'key' => $request->key, 'url' => $request->url], $id);
+
         return redirect()->back();
     }
 
 ## Для удаления:
 
-    public function destroy(int $id)
+    public function destroy(int $id): RedirectResponse
     {
         Ssl_search::remove($id);
+
         return redirect()->back();
     }
 
 ## Передача зашиврованной информации:
 
-    public function message()
+    public function message(): View
     {
         $resource = Ssl_search::all();
+
         return view('vendor.openssl.send_message', ['resource' => $resource]);
     }
 
-    public function send_message(Request $request)
+    public function send_message(Request $request): RedirectResponse
     {
-        $request->validate([
-            'id' => 'required|string',
-            'text' => 'required|string'
-        ]);
-        $id = $request->id;
-        $text = $request->text;
+        $id = $request->get('id');
+        $text = $request->get('text');
         $url = Ssl_search::find($id)->url;
-        $key = Ssl_search::get_public_key($id . '_id_public');
+        $key = Ssl_search::get_public_key($id . Ssl_search::$toSave);
         $send = Ssl_search::encrypt($text, $key);
         $name = Ssl_search::$ssl_public_key;
         try {
             $result = Http::post($url, ['name'=>$name, 'text'=>$send]);
-            return $result->body();
-            if ($result->status() == 200) {
-                return redirect()->back();
+            if ($result->status() != 200) {
+                throw new \Exception('Not connection');
             }
         }
         catch (\Throwable $th) {
-            LogMessage::send('error', $th->getMessage());
-            return redirect()->back();
+            LogMessage::send('error: '. $th->getMessage());
         }
+
+        return redirect()->back();
     }
+    
 С формы передаем id и текст сообщения. По id получаем url для отправки.
 
 $name = Ssl_search::$ssl_public_key - имя ключа системы, с которой будет отправлятся сообщение.
 
-$key = Ssl_search::get_public_key($id . '_id_public') - загрузит public key данного ресурса.
+$key = Ssl_search::get_public_key($id . Ssl_search::$toSave) - загрузит public key данного ресурса.
+
+Ssl_search::$toSave - имя для сохранения.
 
 $send = Ssl_search::encrypt($text, $key) - выполнит кодирование сообщение и добавит подпись.
 
@@ -146,26 +156,25 @@ $result = Http::post($url, ['name'=>$name, 'text'=>$send]) - передача д
 
 В /vendor/go280286sai/laravel_openssl/src/Http/Controllers/OpenSslController:
 
-    public function index(Request $request): JsonResponse|string
+    public function index(Request $request): string
     {
-    $request->validate([
-        'name'=> 'required|string',
-        'text' => 'required|string',
-    ]);
-    $id = Ssl_search::where('name', $request->name)->first('id');
-    if(!empty($id)){
-        $data = $request->text;
-        $data[0]=trim($data[0]);
-        $data[1]=trim($data[1]);
-        return Ssl_search::decrypt($data, Ssl_search::get_public_key($id['id'].'_id_public'));
-    } else{
-         return Response::json(['message' => 'Not found'], 404);
-         }
+        $id = Ssl_search::where('name', $request->get('name'))->first('id');
+        try {
+            $result = Ssl_search::decrypt($request->get('text'), Ssl_search::get_public_key($id->id . '_id_public'));
+            LogMessage::send($result);
+
+            return 'ok';
+        }
+        catch (\Throwable $th) {
+            LogMessage::send('error: '. $th->getMessage());
+
+            return $th->getMessage();
+        }
     }
 
 По переданному имени ресурса в базе находим его id и передаем его и массив $data в фунцию:
 
-    Ssl_search::decrypt($data, Ssl_search::get_public_key($id['id'].'_id_public'));
+    Ssl_search::decrypt($data, Ssl_search::get_public_key($id['id']. Ssl_search::$toSave));
 
 Выполняется расшифровка сообщения и проверка подписи. Если подпись верна то возвращается результат.
 

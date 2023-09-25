@@ -24,6 +24,10 @@ class Ssl_search extends Model
      * @var string
      */
     protected $table = 'ssl_searches';
+    /**
+     * @var string
+     */
+    public static string $toSave = '_id_public';
 
     /**
      * @param array $data
@@ -56,7 +60,7 @@ class Ssl_search extends Model
     public static function remove(int $id): void
     {
         self::find($id)->delete();
-        OpenSSL::remove($id . '_id_public');
+        OpenSSL::remove($id . self::$toSave);
     }
 
     /**
@@ -70,9 +74,9 @@ class Ssl_search extends Model
     /**
      * @param string $text
      * @param string $publicKey
-     * @return array
+     * @return string
      */
-    public static function encrypt(string $text, string $publicKey): array
+    public static function encrypt(string $text, string $publicKey): string
     {
         $obj = new EncryptSSL();
 
@@ -80,11 +84,11 @@ class Ssl_search extends Model
     }
 
     /**
-     * @param array $text
+     * @param string $text
      * @param string $publicKey
      * @return string
      */
-    public static function decrypt(array $text, string $publicKey): string
+    public static function decrypt(string $text, string $publicKey): string
     {
         $obj = new DecryptSSL();
 
@@ -106,7 +110,7 @@ class Ssl_search extends Model
      */
     public static function save_public_key(string $publicKey, int $id): void
     {
-        OpenSSL::save_public_key($publicKey, $id . '_id_public');
+        OpenSSL::save_public_key($publicKey, $id . self::$toSave);
     }
 
     /**

@@ -9,13 +9,12 @@ class EncryptSSL extends OpenSSL
     /**
      * @param string $textToEncrypt
      * @param string $publicKey
-     * @return array
+     * @return string
      */
-    public function encrypt(string $textToEncrypt, string $publicKey): array
+    public function encrypt(string $textToEncrypt, string $publicKey): string
     {
         openssl_public_encrypt($textToEncrypt, $encryptedData, $publicKey);
-        openssl_sign($textToEncrypt, $signature, static::get_private_key(), OPENSSL_ALGO_SHA256);
 
-        return [base64_encode($encryptedData), base64_encode($signature)];
+        return base64_encode($encryptedData);
     }
 }

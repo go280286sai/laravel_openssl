@@ -87,7 +87,9 @@ class OpenSSL
      */
     public static function save_private_key(string $privateKeyPEM): void
     {
-        file_put_contents(self::$path . 'private.pem', $privateKeyPEM);
+        $file = fopen(self::$path . 'private.pem', 'w');
+        fwrite($file, $privateKeyPEM);
+        fclose($file);
     }
 
     /**
