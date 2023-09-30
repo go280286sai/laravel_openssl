@@ -13,7 +13,7 @@ class EncryptSSL extends OpenSSL
      */
     public function encrypt(string $textToEncrypt, string $publicKey): string
     {
-        openssl_public_encrypt($textToEncrypt, $encryptedData, $publicKey);
+        openssl_public_encrypt($textToEncrypt, $encryptedData, $publicKey, OPENSSL_PKCS1_OAEP_PADDING);
 
         return base64_encode($encryptedData);
     }

@@ -17,7 +17,7 @@ class DecryptSSL extends OpenSSL
     {
         try {
             $textToDecrypt = base64_decode($encryptedData);
-            openssl_private_decrypt($textToDecrypt, $decryptedData, parent::get_private_key());
+            openssl_private_decrypt($textToDecrypt, $decryptedData, parent::get_private_key(), OPENSSL_PKCS1_OAEP_PADDING);
 
             return $decryptedData;
         } catch (\Exception $e) {

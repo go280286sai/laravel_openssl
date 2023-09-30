@@ -26,7 +26,7 @@
         @foreach($resource as $item)
         <tr>
             <th scope="row">{{$item['id']}}</th>
-            <td><a href="{{env('APP_URL')}}resource/{{$item['id']}}/edit">{{$item['name']}}</a></td>
+            <td><a href="{{env('APP_URL')}}/resource/{{$item['id']}}/edit">{{$item['name']}}</a></td>
             <td>{{$item['url']}}</td>
             <td>
                 <form action="{{env('APP_URL')}}/resource/{{$item['id']}}" method="post">
